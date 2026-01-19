@@ -1,0 +1,14 @@
+[project]
+name = "multiagent-supervisor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ipykernel>=7.1.0",
+    "langchain>=0.3.0",
+    "langchain-community>=0.4.1",
+    "langchain-openai>=1.1.7",
+    "langgraph-supervisor>=0.0.31",
+    "python-dotenv>=1.2.1",
+]
