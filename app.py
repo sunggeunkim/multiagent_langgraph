@@ -4,7 +4,7 @@ import contextlib
 import io
 from typing import Annotated
 
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 from langchain.agents import create_agent
 from langchain_core.tools import tool
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
@@ -106,7 +106,7 @@ def python_repl_tool(
     )
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
-search_tool = TavilySearchResults(tavily_api_key=TAVILY_API_KEY)
+search_tool = TavilySearch(tavily_api_key=TAVILY_API_KEY)
 
 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
@@ -123,6 +123,34 @@ else:
 research_agent = create_agent(
     model=llm,
     tools=[search_tool],
-    system_prompt="You can only do research. You do not generate charts",
+    system_prompt="You are a research expert. You must find concrete data when asked. You do not generate charts.",
     name="research_agent",
 )
+
+code_agent = create_agent(
+    model=llm,
+    tools=[python_repl_tool],
+    system_prompt="You generate charts using python code. You must use the python_repl_tool to execute the code. You do not perform research. Use plt.show() to display the chart.",
+    name="code_agent",
+)
+
+workflow = create_supervisor(
+    model=llm,
+    agents=[research_agent, code_agent],
+    system_prompt=(
+        "You are a team supervisor managing a research expert and a math expert."
+        "For research, use research_agent."
+        "For chart generation, use code_agent."
+        "If the user asks to draw a chart, you MUST use the code_agent to generate the code for it."
+    )
+)
+
+app = workflow.compile()
+app.invoke({
+    "messages":[
+        {
+            "role": "user",
+            "content": "Based on the GDP of the United States in the past three years, draw a line chart."
+        }
+    ]
+})
