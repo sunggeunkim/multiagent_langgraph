@@ -92,13 +92,26 @@ def create_workflow():
     azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
     azure_api_version = os.getenv("AZURE_OPENAI_API_VERSION")
 
+    # Langfuse configuration
+    langfuse_handler = None
+    if os.getenv("LANGFUSE_SECRET_KEY") and os.getenv("LANGFUSE_PUBLIC_KEY"):
+        try:
+            from langfuse.langchain import CallbackHandler
+            langfuse_handler = CallbackHandler()
+        except ImportError:
+            print("Langfuse not installed or import failed.")
+
     if azure_endpoint and azure_api_key and azure_api_version:
         llm = AzureChatOpenAI(
             azure_endpoint=azure_endpoint,
             api_version=azure_api_version,
+            callbacks=[langfuse_handler] if langfuse_handler else [],
         )
     else:
-        llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o"))
+        llm = ChatOpenAI(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o"),
+            callbacks=[langfuse_handler] if langfuse_handler else [],
+        )
 
     research_agent = create_agent(
         model=llm,
